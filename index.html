@@ -185,19 +185,22 @@ function ckSz(){
 }
 
 /* ════════════ LIGHTBOX ════════════ */
+function getBestPhoto(idx){
+  if(CFG.photosOriginal&&CFG.photosOriginal[idx])return CFG.photosOriginal[idx];
+  if(CFG.photosFull&&CFG.photosFull[idx])return CFG.photosFull[idx];
+  return CFG.photos[idx];
+}
 function openLB(idx){
   if(!CFG.photos.length)return;
   lbIdx=idx;
-  var src=CFG.photosFull&&CFG.photosFull[lbIdx]?CFG.photosFull[lbIdx]:CFG.photos[lbIdx];
-  document.getElementById('lb-img').src=src;
+  document.getElementById('lb-img').src=getBestPhoto(lbIdx);
   document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open')}
 function navLB(d){
   lbIdx=(lbIdx+d+CFG.photos.length)%CFG.photos.length;
-  var src=CFG.photosFull&&CFG.photosFull[lbIdx]?CFG.photosFull[lbIdx]:CFG.photos[lbIdx];
-  document.getElementById('lb-img').src=src;
+  document.getElementById('lb-img').src=getBestPhoto(lbIdx);
   document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
 }
 document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
@@ -211,20 +214,53 @@ async function generateLink(){
   CFG.quotes=document.getElementById('quotes').value.split('\n').filter(function(q){return q.trim()});
   if(!CFG.quotes.length)CFG.quotes=['Happy Valentine\'s Day ♥'];
   var vf=upFiles.filter(Boolean);CFG.photos=[];CFG.photosFull=[];
+
+  // Store original full-res for local preview
+  CFG.photosOriginal=[];
   for(var i=0;i<vf.length;i++){
-    CFG.photos.push(await compImg(vf[i],200,260,.45));
-    CFG.photosFull.push(await compImg(vf[i],800,1000,.75));
+    CFG.photosOriginal.push(await compImg(vf[i],1200,1600,.92));
   }
+
+  // Thumbnails for 3D heart (tiny)
+  for(var i=0;i<vf.length;i++){
+    CFG.photos.push(await compImg(vf[i],160,200,.4));
+  }
+
+  // Full-res for URL sharing — start high, compress down if needed
+  for(var i=0;i<vf.length;i++){
+    CFG.photosFull.push(await compImg(vf[i],1200,1600,.85));
+  }
+
   var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,t:CFG.photos,f:CFG.photosFull};
   try{
     var e=enc(pay);var url=location.origin+location.pathname+'#v='+e;
-    if(url.length>200000){
-      for(var i=0;i<pay.f.length;i++)pay.f[i]=await recomp(pay.f[i],600,780,.6);
-      for(var i=0;i<pay.t.length;i++)pay.t[i]=await recomp(pay.t[i],160,200,.35);
-      CFG.photos=pay.t;CFG.photosFull=pay.f;
+
+    // Progressive compression — try smaller until it fits
+    // Most browsers support ~2MB URLs in hash, we target under that
+    var maxLen=1800000;
+    var attempts=[
+      {w:1000,h:1300,q:.8},
+      {w:800,h:1040,q:.75},
+      {w:640,h:830,q:.7},
+      {w:500,h:650,q:.6},
+    ];
+    var ai=0;
+    while(url.length>maxLen&&ai<attempts.length){
+      var a=attempts[ai];
+      for(var i=0;i<pay.f.length;i++)pay.f[i]=await recomp(CFG.photosOriginal[i]||pay.f[i],a.w,a.h,a.q);
+      CFG.photosFull=pay.f;
+      e=enc(pay);url=location.origin+location.pathname+'#v='+e;
+      ai++;
+    }
+    // If still too big, also shrink thumbs
+    if(url.length>maxLen){
+      for(var i=0;i<pay.t.length;i++)pay.t[i]=await recomp(pay.t[i],120,150,.3);
+      CFG.photos=pay.t;
       e=enc(pay);url=location.origin+location.pathname+'#v='+e;
     }
+
     genURL=url;
+    // For local preview, use the originals in lightbox
     document.getElementById('share-url').textContent=genURL;
     document.getElementById('share-modal').classList.remove('hidden');
   }catch(er){alert('Error. Try fewer or smaller photos.')}
