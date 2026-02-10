@@ -221,46 +221,63 @@ async function generateLink(){
     CFG.photosOriginal.push(await compImg(vf[i],1200,1600,.92));
   }
 
-  // Thumbnails for 3D heart (tiny)
+  // Thumbnails for 3D sprites
   for(var i=0;i<vf.length;i++){
     CFG.photos.push(await compImg(vf[i],160,200,.4));
   }
 
-  // Full-res for URL sharing — start high, compress down if needed
+  // Good quality for lightbox in shared link
   for(var i=0;i<vf.length;i++){
-    CFG.photosFull.push(await compImg(vf[i],1200,1600,.85));
+    CFG.photosFull.push(await compImg(vf[i],1000,1300,.82));
   }
 
   var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,t:CFG.photos,f:CFG.photosFull};
-  try{
-    var e=enc(pay);var url=location.origin+location.pathname+'#v='+e;
 
-    // Progressive compression — try smaller until it fits
-    // Most browsers support ~2MB URLs in hash, we target under that
+  btn.textContent='Uploading heart...';
+
+  // Try to upload to jsonblob.com (free, no key needed)
+  try{
+    var resp=await fetch('https://jsonblob.com/api/jsonBlob',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(pay)
+    });
+    if(resp.ok){
+      // ID is in the Location header or URL
+      var loc=resp.headers.get('Location')||resp.headers.get('x-jsonblob');
+      var blobId=loc?loc.split('/').pop():null;
+      if(!blobId){
+        var txt=await resp.text();
+        // Try to get from response URL
+        blobId=resp.url.split('/').pop();
+      }
+      if(blobId&&blobId.length>5){
+        genURL=location.origin+location.pathname+'#id='+blobId;
+        document.getElementById('share-url').textContent=genURL;
+        document.getElementById('share-modal').classList.remove('hidden');
+        btn.disabled=false;btn.textContent='Generate Shareable Heart ♥';
+        return;
+      }
+    }
+  }catch(e){console.warn('Cloud upload failed, using URL fallback:',e)}
+
+  // Fallback: encode in URL hash
+  btn.textContent='Using direct link...';
+  try{
+    var e2=enc(pay);var url=location.origin+location.pathname+'#v='+e2;
     var maxLen=1800000;
-    var attempts=[
-      {w:1000,h:1300,q:.8},
-      {w:800,h:1040,q:.75},
-      {w:640,h:830,q:.7},
-      {w:500,h:650,q:.6},
-    ];
+    var attempts=[{w:800,h:1040,q:.75},{w:640,h:830,q:.7},{w:500,h:650,q:.6},{w:360,h:470,q:.5}];
     var ai=0;
     while(url.length>maxLen&&ai<attempts.length){
       var a=attempts[ai];
       for(var i=0;i<pay.f.length;i++)pay.f[i]=await recomp(CFG.photosOriginal[i]||pay.f[i],a.w,a.h,a.q);
-      CFG.photosFull=pay.f;
-      e=enc(pay);url=location.origin+location.pathname+'#v='+e;
-      ai++;
+      CFG.photosFull=pay.f;e2=enc(pay);url=location.origin+location.pathname+'#v='+e2;ai++;
     }
-    // If still too big, also shrink thumbs
     if(url.length>maxLen){
       for(var i=0;i<pay.t.length;i++)pay.t[i]=await recomp(pay.t[i],120,150,.3);
-      CFG.photos=pay.t;
-      e=enc(pay);url=location.origin+location.pathname+'#v='+e;
+      CFG.photos=pay.t;e2=enc(pay);url=location.origin+location.pathname+'#v='+e2;
     }
-
     genURL=url;
-    // For local preview, use the originals in lightbox
     document.getElementById('share-url').textContent=genURL;
     document.getElementById('share-modal').classList.remove('hidden');
   }catch(er){alert('Error. Try fewer or smaller photos.')}
@@ -280,6 +297,30 @@ function previewHeart(){document.getElementById('share-modal').classList.add('hi
 /* ════════════ AUTO-LOAD FROM URL ════════════ */
 window.addEventListener('DOMContentLoaded',function(){
   var h=location.hash;
+
+  // Cloud-stored data: #id=BLOBID
+  if(h.indexOf('#id=')===0){
+    var blobId=h.slice(4);
+    document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Loading Your Heart...</h2><p class="subtitle">Preparing something special ♥</p></div>';
+    fetch('https://jsonblob.com/api/jsonBlob/'+blobId)
+      .then(function(r){return r.json()})
+      .then(function(d){
+        CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
+        CFG.quotes=d.q&&d.q.length?d.q:['Happy Valentine\'s Day ♥'];
+        CFG.photos=d.t||d.p||[];
+        CFG.photosFull=d.f||d.p||CFG.photos;
+        genURL=location.href;
+        document.getElementById('config-panel').classList.add('hidden');
+        launchScene();
+      })
+      .catch(function(e){
+        console.warn('Failed to load heart data:',e);
+        document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Oops!</h2><p class="subtitle">Could not load this heart. The link may have expired.</p></div>';
+      });
+    return;
+  }
+
+  // Direct hash data: #v=BASE64
   if(h.indexOf('#v=')===0){
     try{
       var d=dec(h.slice(3));
