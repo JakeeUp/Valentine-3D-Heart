@@ -205,6 +205,72 @@ function navLB(d){
 }
 document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
 
+/* ════════════ CLOUD STORAGE HELPERS ════════════ */
+async function tryJsonBlob(data){
+  var resp=await fetch('https://jsonblob.com/api/jsonBlob',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:data
+  });
+  if(!resp.ok)throw new Error('jsonblob status '+resp.status);
+  var loc=resp.headers.get('Location')||'';
+  var id=loc.split('/').pop();
+  if(!id||id.length<5)throw new Error('no blob id');
+  return {id:id,get:'https://jsonblob.com/api/jsonBlob/'+id};
+}
+
+async function tryNpoint(data){
+  var resp=await fetch('https://api.npoint.io/doc',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:data})
+  });
+  if(!resp.ok)throw new Error('npoint status '+resp.status);
+  var j=await resp.json();
+  if(!j.token)throw new Error('no token');
+  return {id:j.token,get:'https://api.npoint.io/'+j.token};
+}
+
+async function uploadToCloud(payload){
+  var data=JSON.stringify(payload);
+  console.log('Payload size:',Math.round(data.length/1024)+'KB');
+
+  // Try jsonblob first
+  try{
+    console.log('Trying jsonblob...');
+    var r=await tryJsonBlob(data);
+    console.log('jsonblob success! ID:',r.id);
+    return {id:r.id,getUrl:r.get,provider:'jb'};
+  }catch(e){console.warn('jsonblob failed:',e.message)}
+
+  // Try npoint
+  try{
+    console.log('Trying npoint...');
+    var r=await tryNpoint(data);
+    console.log('npoint success! ID:',r.id);
+    return {id:r.id,getUrl:r.get,provider:'np'};
+  }catch(e){console.warn('npoint failed:',e.message)}
+
+  return null;
+}
+
+async function loadFromCloud(hash){
+  var parts=hash.split('=');var val=parts[1];
+  // #jb=ID or #np=ID
+  var provider=parts[0].slice(1);
+  var url;
+  if(provider==='jb')url='https://jsonblob.com/api/jsonBlob/'+val;
+  else if(provider==='np')url='https://api.npoint.io/'+val;
+  else return null;
+
+  var resp=await fetch(url);
+  if(!resp.ok)throw new Error('fetch failed '+resp.status);
+  var d=await resp.json();
+  // npoint wraps in {contents:...}
+  if(d.contents&&typeof d.contents==='string')d=JSON.parse(d.contents);
+  return d;
+}
+
 /* ════════════ GENERATE LINK ════════════ */
 async function generateLink(){
   var btn=document.getElementById('launch-btn');
@@ -215,54 +281,28 @@ async function generateLink(){
   if(!CFG.quotes.length)CFG.quotes=['Happy Valentine\'s Day ♥'];
   var vf=upFiles.filter(Boolean);CFG.photos=[];CFG.photosFull=[];
 
-  // Store original full-res for local preview
   CFG.photosOriginal=[];
-  for(var i=0;i<vf.length;i++){
-    CFG.photosOriginal.push(await compImg(vf[i],1200,1600,.92));
-  }
-
-  // Thumbnails for 3D sprites
-  for(var i=0;i<vf.length;i++){
-    CFG.photos.push(await compImg(vf[i],160,200,.4));
-  }
-
-  // Good quality for lightbox in shared link
-  for(var i=0;i<vf.length;i++){
-    CFG.photosFull.push(await compImg(vf[i],1000,1300,.82));
-  }
+  for(var i=0;i<vf.length;i++) CFG.photosOriginal.push(await compImg(vf[i],1200,1600,.92));
+  for(var i=0;i<vf.length;i++) CFG.photos.push(await compImg(vf[i],160,200,.4));
+  for(var i=0;i<vf.length;i++) CFG.photosFull.push(await compImg(vf[i],1000,1300,.82));
 
   var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,t:CFG.photos,f:CFG.photosFull};
 
-  btn.textContent='Uploading heart...';
+  // Try cloud upload for short URL
+  btn.textContent='Uploading...';
+  var cloud=await uploadToCloud(pay);
 
-  // Try to upload to jsonblob.com (free, no key needed)
-  try{
-    var resp=await fetch('https://jsonblob.com/api/jsonBlob',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify(pay)
-    });
-    if(resp.ok){
-      // ID is in the Location header or URL
-      var loc=resp.headers.get('Location')||resp.headers.get('x-jsonblob');
-      var blobId=loc?loc.split('/').pop():null;
-      if(!blobId){
-        var txt=await resp.text();
-        // Try to get from response URL
-        blobId=resp.url.split('/').pop();
-      }
-      if(blobId&&blobId.length>5){
-        genURL=location.origin+location.pathname+'#id='+blobId;
-        document.getElementById('share-url').textContent=genURL;
-        document.getElementById('share-modal').classList.remove('hidden');
-        btn.disabled=false;btn.textContent='Generate Shareable Heart ♥';
-        return;
-      }
-    }
-  }catch(e){console.warn('Cloud upload failed, using URL fallback:',e)}
+  if(cloud){
+    genURL=location.origin+location.pathname+'#'+cloud.provider+'='+cloud.id;
+    document.getElementById('share-url').textContent=genURL;
+    document.getElementById('share-modal').classList.remove('hidden');
+    btn.disabled=false;btn.textContent='Generate Shareable Heart ♥';
+    return;
+  }
 
   // Fallback: encode in URL hash
-  btn.textContent='Using direct link...';
+  console.warn('All cloud services failed, using URL hash fallback');
+  btn.textContent='Creating link...';
   try{
     var e2=enc(pay);var url=location.origin+location.pathname+'#v='+e2;
     var maxLen=1800000;
@@ -298,13 +338,12 @@ function previewHeart(){document.getElementById('share-modal').classList.add('hi
 window.addEventListener('DOMContentLoaded',function(){
   var h=location.hash;
 
-  // Cloud-stored data: #id=BLOBID
-  if(h.indexOf('#id=')===0){
-    var blobId=h.slice(4);
+  // Cloud-stored: #jb=ID or #np=ID
+  if(h.indexOf('#jb=')===0||h.indexOf('#np=')===0){
     document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Loading Your Heart...</h2><p class="subtitle">Preparing something special ♥</p></div>';
-    fetch('https://jsonblob.com/api/jsonBlob/'+blobId)
-      .then(function(r){return r.json()})
+    loadFromCloud(h)
       .then(function(d){
+        if(!d)throw new Error('empty');
         CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
         CFG.quotes=d.q&&d.q.length?d.q:['Happy Valentine\'s Day ♥'];
         CFG.photos=d.t||d.p||[];
@@ -314,13 +353,21 @@ window.addEventListener('DOMContentLoaded',function(){
         launchScene();
       })
       .catch(function(e){
-        console.warn('Failed to load heart data:',e);
-        document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Oops!</h2><p class="subtitle">Could not load this heart. The link may have expired.</p></div>';
+        console.warn('Failed to load:',e);
+        document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Oops!</h2><p class="subtitle">Could not load this heart. The link may have expired or be invalid.</p></div>';
       });
     return;
   }
 
-  // Direct hash data: #v=BASE64
+  // Legacy cloud: #id=ID (try jsonblob)
+  if(h.indexOf('#id=')===0){
+    var newHash='#jb='+h.slice(4);
+    location.hash=newHash;
+    location.reload();
+    return;
+  }
+
+  // Direct hash: #v=BASE64
   if(h.indexOf('#v=')===0){
     try{
       var d=dec(h.slice(3));
