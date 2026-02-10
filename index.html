@@ -143,69 +143,56 @@ You're the closest to heaven that I'll ever be.</textarea>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* ════════════ CONFIGURATION ════════════ */
-var API_KEY = '5339c86fa740941133b302e1e1b0564c'; // Added your key here
+var API_KEY = '5339c86fa740941133b302e1e1b0564c';
 
-/* ════════════ URL ENCODE/DECODE ════════════ */
+/* ════════════ ENCODING (UNICODE FIX) ════════════ */
+// This version explicitly handles Emojis and Special Characters
 function enc(obj){
   try {
-    // Simple JSON encoding for short data
-    return btoa(JSON.stringify(obj)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  } catch(e) { console.error(e); return ''; }
+    var str = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(str)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  } catch(e) { console.error('Encode error:',e); return ''; }
 }
 
 function dec(s){
   try {
     var b = s.replace(/-/g,'+').replace(/_/g,'/');
     while(b.length%4) b+='=';
-    return JSON.parse(atob(b));
-  } catch(e) { console.error(e); return {}; }
+    return JSON.parse(decodeURIComponent(escape(atob(b))));
+  } catch(e) { 
+    console.error('Decode error:',e); 
+    return null; // Return null so we can check for failure
+  }
 }
 
-/* ════════════ IMAGE UPLOAD TO IMGBB ════════════ */
+/* ════════════ UPLOAD & GENERATE ════════════ */
 async function uploadToHost(file) {
-    if(!API_KEY) {
-        alert("Missing API Key!");
-        throw new Error("No API Key");
-    }
-
+    if(!API_KEY) throw new Error("No API Key");
     const formData = new FormData();
     formData.append("image", file);
     formData.append("key", API_KEY);
-
     try {
-        let response = await fetch("https://api.imgbb.com/1/upload", {
-            method: "POST",
-            body: formData
-        });
+        let response = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: formData });
         let data = await response.json();
-        if (data.success) {
-            return data.data.url; // Returns the HTTP link
-        } else {
-            throw new Error("Upload failed: " + (data.error ? data.error.message : "Unknown error"));
-        }
-    } catch (err) {
-        console.error("Upload Error:", err);
-        throw err;
-    }
+        if (data.success) return data.data.url;
+        else throw new Error("Upload failed");
+    } catch (err) { console.error(err); throw err; }
 }
 
 /* ════════════ STATE ════════════ */
 var CFG={name1:'',name2:'',quotes:[],photos:[]};
 var genURL='';
 var scene,camera,renderer,heartGroup;
-var tRot={x:0,y:0},cRot={x:0,y:0};
-var prevRot={x:0,y:0},angVel={x:0,y:0};
+var tRot={x:0,y:0},cRot={x:0,y:0},prevRot={x:0,y:0},angVel={x:0,y:0};
 var dragging=false,dStart={x:0,y:0},dRotS={x:0,y:0};
-var zoom=1,tZoom=1;
-var qIdx=-1,lastZT=0;
-var floatParts=[],photoSprites=[];
+var zoom=1,tZoom=1,qIdx=-1,lastZT=0;
+var floatParts=[],photoSprites=[],allSprites=[];
 var T=0,lbIdx=0;
-var ray,mVec;
-var ckStart={x:0,y:0,t:0};
-var allSprites=[];
+var ray,mVec,ckStart={x:0,y:0,t:0};
 var upFiles=[];
 
-/* ════════════ UPLOADS UI ════════════ */
+/* ════════════ UI EVENTS ════════════ */
 document.getElementById('photo-input').addEventListener('change',function(e){
   for(var i=0;i<e.target.files.length;i++){
     upFiles.push(e.target.files[i]);
@@ -213,7 +200,6 @@ document.getElementById('photo-input').addEventListener('change',function(e){
   }
   this.value='';
 });
-
 function addThumb(src,idx){
   var c=document.getElementById('thumb-container');
   var w=document.createElement('div');w.className='thumb-wrap';
@@ -223,27 +209,10 @@ function addThumb(src,idx){
   w.appendChild(im);w.appendChild(b);c.appendChild(w);
 }
 
-/* ════════════ LIGHTBOX ════════════ */
-function openLB(idx){
-  if(!CFG.photos.length)return;
-  lbIdx=idx;
-  document.getElementById('lb-img').src=CFG.photos[lbIdx];
-  document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
-  document.getElementById('lightbox').classList.add('open');
-}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('open')}
-function navLB(d){
-  lbIdx=(lbIdx+d+CFG.photos.length)%CFG.photos.length;
-  document.getElementById('lb-img').src=CFG.photos[lbIdx];
-  document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
-}
-document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
-
 /* ════════════ GENERATE LINK ════════════ */
 async function generateLink(){
   var btn=document.getElementById('launch-btn');
   var vf=upFiles.filter(Boolean);
-  
   if(vf.length === 0) { alert("Please add at least one photo!"); return; }
 
   btn.disabled=true;
@@ -251,37 +220,31 @@ async function generateLink(){
   CFG.name2=document.getElementById('name2').value.trim()||'Me';
   CFG.quotes=document.getElementById('quotes').value.split('\n').filter(function(q){return q.trim()});
   if(!CFG.quotes.length)CFG.quotes=['Happy Valentine\'s Day ♥'];
-  
   CFG.photos=[];
 
   try {
-      // Upload Loop
       for(var i=0; i<vf.length; i++) {
           btn.textContent = `Uploading photo ${i+1} of ${vf.length}...`;
           var url = await uploadToHost(vf[i]);
           CFG.photos.push(url);
       }
-
       btn.textContent='Generating Link...';
-      
-      // Payload: just names, quotes, and URL strings
       var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,p:CFG.photos};
       var e=enc(pay);
-      genURL=location.origin+location.pathname+'#v='+e;
+      
+      // Construct URL safely
+      var cleanUrl = window.location.href.split('#')[0];
+      genURL = cleanUrl + '#v=' + e;
       
       console.log('Final URL length:', genURL.length);
-
       document.getElementById('share-url').textContent=genURL;
       document.getElementById('share-modal').classList.remove('hidden');
-
   } catch(er){
       console.error(er);
-      alert('Error uploading images. Check console for details.');
+      alert('Error uploading images. Please try again.');
   }
-  
   btn.disabled=false;btn.textContent='Generate Shareable Heart ♥';
 }
-
 function copyLink(){
   navigator.clipboard.writeText(genURL).then(function(){
     var t=document.getElementById('copied-toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000);
@@ -290,28 +253,34 @@ function copyLink(){
 function previewHeart(){document.getElementById('share-modal').classList.add('hidden');launchScene()}
 function showShareModal(){document.getElementById('share-url').textContent=genURL;document.getElementById('share-modal').classList.remove('hidden')}
 
-/* ════════════ AUTO-LOAD ════════════ */
+/* ════════════ AUTO-LOAD FROM URL ════════════ */
 window.addEventListener('DOMContentLoaded',function(){
   var h=location.hash;
   if(h.indexOf('#v=')===0){
     document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Loading Your Heart...</h2><p class="subtitle">Retrieving memories ♥</p></div>';
-    try{
-      var d=dec(h.slice(3));
-      CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
-      CFG.quotes=d.q||['Happy Valentine\'s Day ♥'];
-      CFG.photos=d.p||[];
-      
-      genURL=location.href;
-      document.getElementById('config-panel').classList.add('hidden');
-      launchScene();
-    }catch(e){
-      console.warn('Bad link:',e);
-      document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Oops!</h2><p class="subtitle">Could not load this heart.</p></div>';
-    }
+    
+    // Add small delay to ensure DOM is ready
+    setTimeout(function(){
+        try{
+          var d=dec(h.slice(3));
+          if(!d) throw new Error("Decoded data is null");
+
+          CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
+          CFG.quotes=d.q||['Happy Valentine\'s Day ♥'];
+          CFG.photos=d.p||[];
+          
+          genURL=location.href;
+          document.getElementById('config-panel').classList.add('hidden');
+          launchScene();
+        }catch(e){
+          console.warn('Bad link:',e);
+          document.getElementById('config-panel').innerHTML='<div class="config-box" style="text-align:center"><h2>Oops!</h2><p class="subtitle">Could not load this heart.<br>The link may be broken.</p><br><button onclick="location.hash=\'\';location.reload()" style="background:#ff4f7b;border:none;padding:10px 20px;color:white;border-radius:8px;cursor:pointer">Create New Heart</button></div>';
+        }
+    }, 500);
   }
 });
 
-/* ════════════ SCENE LAUNCH ════════════ */
+/* ════════════ SCENE LOGIC ════════════ */
 function launchScene(){
   document.getElementById('config-panel').classList.add('hidden');
   document.body.classList.remove('config-mode');
@@ -325,7 +294,7 @@ function launchScene(){
   initThree();animate();
 }
 
-/* ════════════ 3D LOGIC ════════════ */
+/* ════════════ 3D ENGINE ════════════ */
 function heartPos(u,v){
   var s=.07,x=16*Math.pow(Math.sin(u),3);
   var y=13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u);
@@ -340,9 +309,9 @@ function getHP(n){
   }return pts;
 }
 function mkNameTex(name,color){
-  var c=document.createElement('canvas');c.width=128;c.height=32;
-  var ctx=c.getContext('2d');ctx.font='bold 20px "Playfair Display",serif';
-  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,64,16);
+  var c=document.createElement('canvas');c.width=256;c.height=64; // Increased res
+  var ctx=c.getContext('2d');ctx.font='bold 40px "Playfair Display",serif';
+  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,128,32);
   var t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 function roundRect(ctx,x,y,w,h,r){
@@ -353,6 +322,7 @@ function roundRect(ctx,x,y,w,h,r){
   ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
 
+/* ════════════ THREE JS SETUP ════════════ */
 function initThree(){
   scene=new THREE.Scene();
   scene.fog=new THREE.FogExp2(0x0a0008,.15);
@@ -386,7 +356,7 @@ function initThree(){
     for(var i=0;i<pp.length;i++){
       (function(idx,pt){
         var img=new Image();
-        img.crossOrigin = "Anonymous"; // Required for Three.js textures from URL
+        img.crossOrigin = "Anonymous";
         img.onload=function(){
           var pad=6,rad=14;
           var cw=img.width+pad*2,ch=img.height+pad*2;
@@ -434,6 +404,7 @@ function initThree(){
   window.addEventListener('resize',onRsz);
 }
 
+/* ════════════ INPUTS ════════════ */
 function setupCtrl(){
   var el=renderer.domElement;
   el.addEventListener('mousedown',function(e){dragging=true;dStart={x:e.clientX,y:e.clientY};dRotS={x:tRot.x,y:tRot.y};ckStart={x:e.clientX,y:e.clientY,t:Date.now()}});
@@ -445,28 +416,17 @@ function setupCtrl(){
   el.addEventListener('touchmove',function(e){e.preventDefault();if(e.touches.length===1&&dragging){tRot.y=dRotS.y+(e.touches[0].clientX-dStart.x)*.005;tRot.x=dRotS.x+(e.touches[0].clientY-dStart.y)*.005;tRot.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,tRot.x))}else if(e.touches.length===2){var dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY,d=Math.sqrt(dx*dx+dy*dy);tZoom+=(d-lTD)*.006;tZoom=Math.max(.35,Math.min(2.5,tZoom));lTD=d}},{passive:false});
   el.addEventListener('touchend',function(e){dragging=false;if(e.changedTouches.length===1){var t=e.changedTouches[0];if(Math.sqrt(Math.pow(t.clientX-tSP.x,2)+Math.pow(t.clientY-tSP.y,2))<12&&Date.now()-ckStart.t<400)checkClick(t.clientX,t.clientY)}});
 }
-function checkClick(cx,cy){
-  if(!photoSprites.length)return;
-  mVec.x=(cx/innerWidth)*2-1;mVec.y=-(cy/innerHeight)*2+1;
-  ray.setFromCamera(mVec,camera);
-  var hits=ray.intersectObjects(photoSprites,false);
-  if(hits.length>0)openLB(hits[0].object.userData.pIdx);
-}
+
+/* ════════════ HELPERS ════════════ */
+function openLB(idx){if(!CFG.photos.length)return;lbIdx=idx;document.getElementById('lb-img').src=CFG.photos[lbIdx];document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;document.getElementById('lightbox').classList.add('open')}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open')}
+function navLB(d){lbIdx=(lbIdx+d+CFG.photos.length)%CFG.photos.length;document.getElementById('lb-img').src=CFG.photos[lbIdx];document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length}
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
+function checkClick(cx,cy){if(!photoSprites.length)return;mVec.x=(cx/innerWidth)*2-1;mVec.y=-(cy/innerHeight)*2+1;ray.setFromCamera(mVec,camera);var hits=ray.intersectObjects(photoSprites,false);if(hits.length>0)openLB(hits[0].object.userData.pIdx)}
 function onRsz(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
-function updateZC(){
-  var now=Date.now();
-  if(zoom>1.2)document.getElementById('zoom-hint').classList.add('hidden');
-  if(zoom>1.3&&now-lastZT>3000){lastZT=now;qIdx=(qIdx+1)%CFG.quotes.length;document.getElementById('quote-text').textContent='\u201C'+CFG.quotes[qIdx]+'\u201D';document.getElementById('quote-card').classList.add('visible');}
-  if(zoom<1.15)document.getElementById('quote-card').classList.remove('visible');
-}
-function isInsideHeart(x,y,z){
-  var cy=y-.3;var sx=x/.07,sy=cy/.07,sz=z/.07;
-  var t=Math.atan2(sx,sy);
-  var hx=16*Math.pow(Math.sin(t),3);
-  var hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
-  var r2d=(Math.sqrt(hx*hx+hy*hy))>0?Math.sqrt(sx*sx+sy*sy)/Math.sqrt(hx*hx+hy*hy):0;
-  return(r2d+Math.abs(sz)/6)<1.15;
-}
+function updateZC(){var now=Date.now();if(zoom>1.2)document.getElementById('zoom-hint').classList.add('hidden');if(zoom>1.3&&now-lastZT>3000){lastZT=now;qIdx=(qIdx+1)%CFG.quotes.length;document.getElementById('quote-text').textContent='\u201C'+CFG.quotes[qIdx]+'\u201D';document.getElementById('quote-card').classList.add('visible');}if(zoom<1.15)document.getElementById('quote-card').classList.remove('visible');}
+function isInsideHeart(x,y,z){var cy=y-.3;var sx=x/.07,sy=cy/.07,sz=z/.07;var t=Math.atan2(sx,sy);var hx=16*Math.pow(Math.sin(t),3);var hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);var r2d=(Math.sqrt(hx*hx+hy*hy))>0?Math.sqrt(sx*sx+sy*sy)/Math.sqrt(hx*hx+hy*hy):0;return(r2d+Math.abs(sz)/6)<1.15;}
+
 function animate(){
   requestAnimationFrame(animate);T+=.016;
   cRot.x+=(tRot.x-cRot.x)*.06;cRot.y+=(tRot.y-cRot.y)*.06;zoom+=(tZoom-zoom)*.06;
