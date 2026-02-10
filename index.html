@@ -155,6 +155,7 @@ var CFG={name1:'',name2:'',quotes:[],photos:[],photosFull:[]};
 var genURL='';
 var scene,camera,renderer,heartGroup;
 var tRot={x:0,y:0},cRot={x:0,y:0};
+var prevRot={x:0,y:0},angVel={x:0,y:0}; // track rotation velocity for snow globe
 var dragging=false,dStart={x:0,y:0},dRotS={x:0,y:0};
 var zoom=1,tZoom=1;
 var qIdx=-1,lastZT=0;
@@ -162,6 +163,7 @@ var floatParts=[],photoSprites=[];
 var T=0,lbIdx=0;
 var ray,mVec;
 var ckStart={x:0,y:0,t:0};
+var allSprites=[]; // all sprites with physics
 
 /* ════════════ UPLOADS ════════════ */
 var upFiles=[];
@@ -322,8 +324,12 @@ function initThree(){
     var mt=new THREE.SpriteMaterial({map:tx,transparent:true,opacity:.55+Math.random()*.45,depthWrite:false,blending:THREE.AdditiveBlending});
     var sp=new THREE.Sprite(mt);sp.position.set(np[i].x,np[i].y,np[i].z);
     var sz=.18+Math.random()*.12;sp.scale.set(sz,sz*.25,1);
-    sp.userData={type:'name',bOp:mt.opacity,ph:Math.random()*Math.PI*2};
-    heartGroup.add(sp);
+    sp.userData={type:'name',bOp:mt.opacity,ph:Math.random()*Math.PI*2,
+      home:{x:np[i].x,y:np[i].y,z:np[i].z},
+      vel:{x:0,y:0,z:0},
+      mass:.5+Math.random()*.5
+    };
+    heartGroup.add(sp);allSprites.push(sp);
   }
 
   // Photo sprites inside heart — rounded corners + pink border + transparent bg
@@ -360,8 +366,12 @@ function initThree(){
           spr.position.set(pt.x,pt.y,pt.z);
           var sz=.14+Math.random()*.09;
           spr.scale.set(sz*asp,sz,1);
-          spr.userData={type:'photo',pIdx:idx,bOp:.85,ph:Math.random()*Math.PI*2,bSz:sz,asp:asp};
-          heartGroup.add(spr);photoSprites.push(spr);
+          spr.userData={type:'photo',pIdx:idx,bOp:.85,ph:Math.random()*Math.PI*2,bSz:sz,asp:asp,
+            home:{x:pt.x,y:pt.y,z:pt.z},
+            vel:{x:0,y:0,z:0},
+            mass:.7+Math.random()*.3
+          };
+          heartGroup.add(spr);photoSprites.push(spr);allSprites.push(spr);
         };
         img.src=CFG.photos[idx];
       })(i%CFG.photos.length,pp[i]);
@@ -437,35 +447,101 @@ function updateZC(){
   if(zoom<1.15)document.getElementById('quote-card').classList.remove('visible');
 }
 
+/* ════════════ HEART BOUNDARY CHECK ════════════ */
+function isInsideHeart(x,y,z){
+  // Approximate: check if point is within scaled heart volume
+  var cy=y-.3; // offset back
+  var sx=x/.07,sy=cy/.07,sz=z/.07;
+  // 2D heart check on x,y
+  var t=Math.atan2(sx,sy);
+  var hx=16*Math.pow(Math.sin(t),3);
+  var hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+  var hd=Math.sqrt(hx*hx+hy*hy);
+  var pd=Math.sqrt(sx*sx+sy*sy);
+  var r2d=hd>0?pd/hd:0;
+  var rz=Math.abs(sz)/6;
+  return(r2d+rz)<1.15;
+}
+
 /* ════════════ ANIMATE ════════════ */
 function animate(){
   requestAnimationFrame(animate);T+=.016;
+
+  // Smooth rotation
   cRot.x+=(tRot.x-cRot.x)*.06;cRot.y+=(tRot.y-cRot.y)*.06;
   zoom+=(tZoom-zoom)*.06;
   if(!dragging)tRot.y+=.002;
+
+  // Calculate angular velocity (how fast we're spinning)
+  angVel.x=(cRot.x-prevRot.x);
+  angVel.y=(cRot.y-prevRot.y);
+  prevRot.x=cRot.x;prevRot.y=cRot.y;
+
   heartGroup.rotation.x=cRot.x;heartGroup.rotation.y=cRot.y;
   camera.position.z=4.5/zoom;camera.lookAt(0,.3,0);
 
+  // Heartbeat
   var pulse=1+.02*Math.sin(T*2.5);
   heartGroup.scale.set(pulse,pulse,pulse);
 
-  // Shimmer & bob
-  for(var i=0;i<heartGroup.children.length;i++){
-    var ch=heartGroup.children[i];
-    if(!ch.isSprite||!ch.userData.type)continue;
-    if(ch.userData.type==='name'){
-      ch.material.opacity=ch.userData.bOp+.15*Math.sin(T*1.5+ch.userData.ph);
-    }else if(ch.userData.type==='photo'){
-      ch.material.opacity=ch.userData.bOp+.1*Math.sin(T*.8+ch.userData.ph);
-      var s=ch.userData.bSz,sp=1+.03*Math.sin(T*1.2+ch.userData.ph);
-      ch.scale.set(s*ch.userData.asp*sp,s*sp,1);
+  // Snow globe force strength
+  var shakeStrength=Math.sqrt(angVel.x*angVel.x+angVel.y*angVel.y);
+  var dt=.016;
+
+  // Physics for all sprites
+  for(var i=0;i<allSprites.length;i++){
+    var sp=allSprites[i];
+    var ud=sp.userData;
+    var v=ud.vel;
+    var h=ud.home;
+    var p=sp.position;
+
+    // 1) Apply shake force - rotation creates lateral force like shaking a snow globe
+    if(shakeStrength>.0003){
+      var force=shakeStrength*ud.mass*2.5;
+      v.x+=angVel.y*force*(1+Math.sin(ud.ph)*0.5);
+      v.y-=angVel.x*force*(1+Math.cos(ud.ph)*0.5);
+      v.z+=(angVel.x+angVel.y)*force*Math.sin(ud.ph+T)*0.4;
+    }
+
+    // 2) Spring force back to home position (gentle pull)
+    var springK=0.3;
+    v.x+=(h.x-p.x)*springK*dt;
+    v.y+=(h.y-p.y)*springK*dt;
+    v.z+=(h.z-p.z)*springK*dt;
+
+    // 3) Damping (friction / settling)
+    var damp=0.96;
+    v.x*=damp;v.y*=damp;v.z*=damp;
+
+    // 4) Apply velocity
+    p.x+=v.x*dt;
+    p.y+=v.y*dt;
+    p.z+=v.z*dt;
+
+    // 5) Boundary constraint - keep inside heart shape
+    if(!isInsideHeart(p.x,p.y,p.z)){
+      // Push back toward home
+      p.x+=(h.x-p.x)*.08;
+      p.y+=(h.y-p.y)*.08;
+      p.z+=(h.z-p.z)*.08;
+      v.x*=-.3;v.y*=-.3;v.z*=-.3;
+    }
+
+    // Visual effects
+    if(ud.type==='name'){
+      sp.material.opacity=ud.bOp+.15*Math.sin(T*1.5+ud.ph);
+    }else if(ud.type==='photo'){
+      sp.material.opacity=ud.bOp+.1*Math.sin(T*.8+ud.ph);
+      var s=ud.bSz,sc=1+.03*Math.sin(T*1.2+ud.ph);
+      sp.scale.set(s*ud.asp*sc,s*sc,1);
     }
   }
 
-  // Float ambient
+  // Float ambient particles
   for(var j=0;j<floatParts.length;j++){
     var pos=floatParts[j].geometry.attributes.position.array;
-    for(var i=0;i<pos.length;i+=3)pos[i+1]+=Math.sin(T+pos[i]*2)*.0003;
+    for(var k=0;k<pos.length;k+=3)pos[k+1]+=Math.sin(T+pos[k]*2)*.0003;
     floatParts[j].geometry.attributes.position.needsUpdate=true;
   }
 
