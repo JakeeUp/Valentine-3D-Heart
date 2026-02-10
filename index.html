@@ -151,7 +151,7 @@ function compImg(file,mW,mH,q){return new Promise(function(res){var r=new FileRe
 function recomp(du,mW,mH,q){return new Promise(function(res){var img=new Image();img.onload=function(){var c=document.createElement('canvas');var w=img.width,h=img.height;if(w>mW){h=h*mW/w;w=mW}if(h>mH){w=w*mH/h;h=mH}c.width=Math.round(w);c.height=Math.round(h);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};img.src=du})}
 
 /* ════════════ STATE ════════════ */
-var CFG={name1:'',name2:'',quotes:[],photos:[]};
+var CFG={name1:'',name2:'',quotes:[],photos:[],photosFull:[]};
 var genURL='';
 var scene,camera,renderer,heartGroup;
 var tRot={x:0,y:0},cRot={x:0,y:0};
@@ -186,14 +186,16 @@ function ckSz(){
 function openLB(idx){
   if(!CFG.photos.length)return;
   lbIdx=idx;
-  document.getElementById('lb-img').src=CFG.photos[lbIdx];
+  var src=CFG.photosFull&&CFG.photosFull[lbIdx]?CFG.photosFull[lbIdx]:CFG.photos[lbIdx];
+  document.getElementById('lb-img').src=src;
   document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open')}
 function navLB(d){
   lbIdx=(lbIdx+d+CFG.photos.length)%CFG.photos.length;
-  document.getElementById('lb-img').src=CFG.photos[lbIdx];
+  var src=CFG.photosFull&&CFG.photosFull[lbIdx]?CFG.photosFull[lbIdx]:CFG.photos[lbIdx];
+  document.getElementById('lb-img').src=src;
   document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
 }
 document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
@@ -206,12 +208,20 @@ async function generateLink(){
   CFG.name2=document.getElementById('name2').value.trim()||'Me';
   CFG.quotes=document.getElementById('quotes').value.split('\n').filter(function(q){return q.trim()});
   if(!CFG.quotes.length)CFG.quotes=['Happy Valentine\'s Day ♥'];
-  var vf=upFiles.filter(Boolean);CFG.photos=[];
-  for(var i=0;i<vf.length;i++)CFG.photos.push(await compImg(vf[i],400,520,.55));
-  var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,p:CFG.photos};
+  var vf=upFiles.filter(Boolean);CFG.photos=[];CFG.photosFull=[];
+  for(var i=0;i<vf.length;i++){
+    CFG.photos.push(await compImg(vf[i],200,260,.45));
+    CFG.photosFull.push(await compImg(vf[i],800,1000,.75));
+  }
+  var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,t:CFG.photos,f:CFG.photosFull};
   try{
     var e=enc(pay);var url=location.origin+location.pathname+'#v='+e;
-    if(url.length>120000){for(var i=0;i<pay.p.length;i++)pay.p[i]=await recomp(pay.p[i],240,300,.3);CFG.photos=pay.p;e=enc(pay);url=location.origin+location.pathname+'#v='+e}
+    if(url.length>200000){
+      for(var i=0;i<pay.f.length;i++)pay.f[i]=await recomp(pay.f[i],600,780,.6);
+      for(var i=0;i<pay.t.length;i++)pay.t[i]=await recomp(pay.t[i],160,200,.35);
+      CFG.photos=pay.t;CFG.photosFull=pay.f;
+      e=enc(pay);url=location.origin+location.pathname+'#v='+e;
+    }
     genURL=url;
     document.getElementById('share-url').textContent=genURL;
     document.getElementById('share-modal').classList.remove('hidden');
@@ -237,7 +247,9 @@ window.addEventListener('DOMContentLoaded',function(){
       var d=dec(h.slice(3));
       CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
       CFG.quotes=d.q&&d.q.length?d.q:['Happy Valentine\'s Day ♥'];
-      CFG.photos=d.p||[];genURL=location.href;
+      CFG.photos=d.t||d.p||[];
+      CFG.photosFull=d.f||d.p||CFG.photos;
+      genURL=location.href;
       document.getElementById('config-panel').classList.add('hidden');
       launchScene();
     }catch(e){console.warn('Bad link:',e)}
