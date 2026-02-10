@@ -3,310 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Happy Valentine's Day ♥</title>
-<meta name="description" content="A 3D Valentine's heart made of love">
-<meta property="og:title" content="Happy Valentine's Day ♥">
-<meta property="og:description" content="Someone made a special Valentine's heart just for you.">
+<title>Happy Valentine's Day</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Great+Vibes&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0008;overflow:hidden;font-family:'Cormorant Garamond',serif;color:#fff;cursor:grab;-webkit-user-select:none;user-select:none}
+body.config-mode{overflow-y:auto;cursor:default}
+body:active{cursor:grabbing}body.config-mode:active{cursor:default}
+canvas{display:block}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+#config-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a0008;z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto}
+#config-panel.hidden{display:none}
+.config-box{background:linear-gradient(160deg,rgba(40,8,25,.95),rgba(20,2,12,.98));border:1px solid rgba(255,79,123,.2);border-radius:20px;padding:clamp(1.5rem,4vw,3rem);max-width:560px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 100px rgba(255,50,100,.1)}
+.config-box h2{font-family:'Great Vibes',cursive;font-size:clamp(2rem,5vw,3rem);color:#ff4f7b;text-align:center;margin-bottom:.3rem}
+.config-box .subtitle{text-align:center;color:rgba(255,200,210,.5);font-style:italic;margin-bottom:1.8rem;font-size:.9rem}
+.field-group{margin-bottom:1.2rem}
+.field-group label{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,160,180,.6);margin-bottom:.4rem}
+.field-group input,.field-group textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:.7rem 1rem;color:#ffd4de;font-family:'Cormorant Garamond',serif;font-size:1rem;outline:none;transition:border-color .3s}
+.field-group input:focus,.field-group textarea:focus{border-color:rgba(255,79,123,.5)}
+.field-group textarea{resize:vertical;min-height:80px;font-size:.9rem;line-height:1.5}
+.field-group .hint{font-size:.72rem;color:rgba(255,160,180,.35);margin-top:.3rem;font-style:italic}
+.file-upload{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem;align-items:center}
+.file-upload label.upload-btn{display:inline-flex;align-items:center;gap:.4rem;background:rgba(255,79,123,.12);border:1px dashed rgba(255,79,123,.35);border-radius:8px;padding:.5rem 1rem;cursor:pointer;font-size:.82rem;color:#ff8fa8;transition:all .3s;text-transform:none;letter-spacing:0}
+.file-upload label.upload-btn:hover{background:rgba(255,79,123,.2)}
+.thumb-wrap{position:relative;display:inline-block}
+.thumb-preview{width:50px;height:50px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,79,123,.3)}
+.thumb-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ff4f7b;border:none;border-radius:50%;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.size-warning{background:rgba(255,180,50,.12);border:1px solid rgba(255,180,50,.3);border-radius:8px;padding:.6rem .9rem;margin-top:.8rem;font-size:.78rem;color:#ffc864;display:none}
+.size-warning.visible{display:block}
+.launch-btn{display:block;width:100%;margin-top:1.8rem;padding:1rem;background:linear-gradient(135deg,#ff4f7b,#d4365c);border:none;border-radius:12px;color:#fff;font-family:'Playfair Display',serif;font-size:1.1rem;letter-spacing:.08em;cursor:pointer;transition:all .3s;box-shadow:0 8px 30px rgba(255,79,123,.3)}
+.launch-btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,79,123,.45)}
+.launch-btn:disabled{opacity:.5;cursor:wait;transform:none}
 
-  body {
-    background: #0a0008;
-    overflow: hidden;
-    font-family: 'Cormorant Garamond', serif;
-    color: #fff;
-    cursor: grab;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  body.config-mode { overflow-y: auto; cursor: default; }
-  body:active { cursor: grabbing; }
-  body.config-mode:active { cursor: default; }
+#share-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,0,8,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:300;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+#share-modal.hidden{display:none}
+.share-box{background:linear-gradient(160deg,rgba(40,8,25,.98),rgba(20,2,12,.99));border:1px solid rgba(255,79,123,.25);border-radius:20px;padding:clamp(1.5rem,4vw,2.5rem);max-width:520px;width:100%;box-shadow:0 30px 100px rgba(255,50,100,.15);text-align:center}
+.share-box h3{font-family:'Great Vibes',cursive;font-size:2rem;color:#ff4f7b;margin-bottom:.5rem}
+.share-box p{color:rgba(255,200,210,.6);font-size:.9rem;margin-bottom:1.2rem}
+.share-url-box{background:rgba(0,0,0,.3);border:1px solid rgba(255,79,123,.2);border-radius:10px;padding:.7rem 1rem;word-break:break-all;font-size:.75rem;color:#ff8fa8;max-height:100px;overflow-y:auto;margin-bottom:1rem;text-align:left;font-family:monospace}
+.share-btn-row{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.share-btn-row button{padding:.7rem 1.4rem;border-radius:10px;border:none;font-family:'Cormorant Garamond',serif;font-size:.95rem;cursor:pointer;transition:all .3s}
+.btn-copy{background:linear-gradient(135deg,#ff4f7b,#d4365c);color:#fff}
+.btn-copy:hover{box-shadow:0 6px 20px rgba(255,79,123,.4)}
+.btn-preview{background:rgba(255,255,255,.08);color:#ffd4de;border:1px solid rgba(255,79,123,.2)!important}
+.btn-close-share{background:rgba(255,255,255,.05);color:rgba(255,200,210,.5)}
+.copied-toast{color:#5eff9e;font-size:.82rem;margin-top:.6rem;opacity:0;transition:opacity .3s}
+.copied-toast.show{opacity:1}
 
-  canvas { display: block; }
+#lightbox{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,0,3,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease;padding:2rem;cursor:default}
+#lightbox.open{opacity:1;pointer-events:auto}
+#lightbox img{max-width:90vw;max-height:85vh;border-radius:12px;box-shadow:0 30px 80px rgba(255,50,100,.25),0 0 60px rgba(255,79,123,.1);border:2px solid rgba(255,79,123,.3);transform:scale(.9);transition:transform .4s ease;object-fit:contain}
+#lightbox.open img{transform:scale(1)}
+.lb-close{position:absolute;top:1.2rem;right:1.5rem;font-size:2rem;color:rgba(255,200,210,.6);cursor:pointer;font-family:sans-serif;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:color .3s;z-index:401}
+.lb-close:hover{color:#ff4f7b}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);font-size:2.5rem;color:rgba(255,200,210,.5);cursor:pointer;width:50px;height:60px;display:flex;align-items:center;justify-content:center;transition:color .3s;font-family:sans-serif;z-index:401}
+.lb-nav:hover{color:#ff4f7b}
+.lb-prev{left:.8rem}.lb-next{right:.8rem}
+.lb-counter{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);font-size:.8rem;color:rgba(255,160,180,.5);letter-spacing:.15em}
 
-  /* ═══════════════════════════════════════ */
-  /*  CONFIG PANEL                           */
-  /* ═══════════════════════════════════════ */
-  #config-panel {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: #0a0008;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    overflow-y: auto;
-  }
-  #config-panel.hidden { display: none; }
+#title-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;pointer-events:none;opacity:1;transition:opacity 1.8s ease}
+#title-overlay.hidden{opacity:0}
+#title-overlay h1{font-family:'Great Vibes',cursive;font-size:clamp(2.5rem,8vw,6rem);color:#ff4f7b;text-shadow:0 0 40px rgba(255,79,123,.5),0 0 80px rgba(255,79,123,.2);animation:titlePulse 3s ease-in-out infinite;text-align:center;padding:0 1rem}
+#title-overlay p{font-family:'Cormorant Garamond',serif;font-size:clamp(.9rem,2.5vw,1.3rem);color:rgba(255,200,210,.7);margin-top:1rem;font-style:italic;letter-spacing:.15em;animation:fadeInUp 2s ease .5s both}
+@keyframes titlePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
-  .config-box {
-    background: linear-gradient(160deg, rgba(40,8,25,0.95), rgba(20,2,12,0.98));
-    border: 1px solid rgba(255,79,123,0.2);
-    border-radius: 20px;
-    padding: clamp(1.5rem, 4vw, 3rem);
-    max-width: 560px;
-    width: 100%;
-    max-height: 92vh;
-    overflow-y: auto;
-    box-shadow: 0 30px 100px rgba(255,50,100,0.1);
-  }
-  .config-box h2 {
-    font-family: 'Great Vibes', cursive;
-    font-size: clamp(2rem, 5vw, 3rem);
-    color: #ff4f7b;
-    text-align: center;
-    margin-bottom: 0.3rem;
-  }
-  .config-box .subtitle {
-    text-align: center;
-    color: rgba(255,200,210,0.5);
-    font-style: italic;
-    margin-bottom: 1.8rem;
-    font-size: 0.9rem;
-  }
-  .field-group { margin-bottom: 1.2rem; }
-  .field-group label {
-    display: block;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: rgba(255,160,180,0.6);
-    margin-bottom: 0.4rem;
-  }
-  .field-group input, .field-group textarea {
-    width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,79,123,0.2);
-    border-radius: 10px;
-    padding: 0.7rem 1rem;
-    color: #ffd4de;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.3s;
-  }
-  .field-group input:focus, .field-group textarea:focus { border-color: rgba(255,79,123,0.5); }
-  .field-group textarea { resize: vertical; min-height: 80px; font-size: 0.9rem; line-height: 1.5; }
-  .field-group .hint { font-size: 0.72rem; color: rgba(255,160,180,0.35); margin-top: 0.3rem; font-style: italic; }
+#quote-card{position:fixed;bottom:10%;left:50%;transform:translateX(-50%) translateY(30px);background:linear-gradient(135deg,rgba(30,5,20,.92),rgba(50,10,30,.88));border:1px solid rgba(255,79,123,.25);border-radius:16px;padding:1.5rem 2.2rem;max-width:min(88vw,500px);text-align:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .8s ease,transform .8s ease;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 12px 50px rgba(255,50,100,.15),inset 0 1px 0 rgba(255,255,255,.06)}
+#quote-card.visible{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#quote-card .quote-text{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(.95rem,2.2vw,1.2rem);color:#ffd4de;line-height:1.7}
+#quote-card .quote-attr{margin-top:.7rem;font-size:.8rem;color:rgba(255,130,160,.6);letter-spacing:.1em;text-transform:uppercase}
 
-  .file-upload { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; align-items: center; }
-  .file-upload label.upload-btn {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    background: rgba(255,79,123,0.12); border: 1px dashed rgba(255,79,123,0.35);
-    border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer;
-    font-size: 0.82rem; color: #ff8fa8; transition: all 0.3s;
-    text-transform: none; letter-spacing: 0;
-  }
-  .file-upload label.upload-btn:hover { background: rgba(255,79,123,0.2); }
-  .thumb-wrap { position: relative; display: inline-block; }
-  .thumb-preview { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,79,123,0.3); }
-  .thumb-remove {
-    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
-    background: #ff4f7b; border: none; border-radius: 50%; color: #fff;
-    font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    line-height: 1;
-  }
+#zoom-hint{position:fixed;bottom:3%;left:50%;transform:translateX(-50%);font-size:clamp(.7rem,1.8vw,.85rem);color:rgba(255,200,210,.35);letter-spacing:.2em;text-transform:uppercase;z-index:40;animation:hintPulse 2.5s ease-in-out infinite;transition:opacity 1s ease}
+#zoom-hint.hidden{opacity:0}
+@keyframes hintPulse{0%,100%{opacity:.35}50%{opacity:.7}}
 
-  .size-warning {
-    background: rgba(255,180,50,0.12); border: 1px solid rgba(255,180,50,0.3);
-    border-radius: 8px; padding: 0.6rem 0.9rem; margin-top: 0.8rem;
-    font-size: 0.78rem; color: #ffc864; display: none;
-  }
-  .size-warning.visible { display: block; }
-
-  .launch-btn {
-    display: block; width: 100%; margin-top: 1.8rem; padding: 1rem;
-    background: linear-gradient(135deg, #ff4f7b, #d4365c); border: none; border-radius: 12px;
-    color: #fff; font-family: 'Playfair Display', serif; font-size: 1.1rem;
-    letter-spacing: 0.08em; cursor: pointer; transition: all 0.3s;
-    box-shadow: 0 8px 30px rgba(255,79,123,0.3);
-  }
-  .launch-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,79,123,0.45); }
-  .launch-btn:disabled { opacity: 0.5; cursor: wait; transform: none; }
-
-  /* ═══════════════════════════════════════ */
-  /*  SHARE MODAL                            */
-  /* ═══════════════════════════════════════ */
-  #share-modal {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(10,0,8,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-  }
-  #share-modal.hidden { display: none; }
-  .share-box {
-    background: linear-gradient(160deg, rgba(40,8,25,0.98), rgba(20,2,12,0.99));
-    border: 1px solid rgba(255,79,123,0.25); border-radius: 20px;
-    padding: clamp(1.5rem, 4vw, 2.5rem); max-width: 520px; width: 100%;
-    box-shadow: 0 30px 100px rgba(255,50,100,0.15);
-    text-align: center;
-  }
-  .share-box h3 {
-    font-family: 'Great Vibes', cursive; font-size: 2rem; color: #ff4f7b; margin-bottom: 0.5rem;
-  }
-  .share-box p { color: rgba(255,200,210,0.6); font-size: 0.9rem; margin-bottom: 1.2rem; }
-  .share-url-box {
-    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,79,123,0.2);
-    border-radius: 10px; padding: 0.7rem 1rem; word-break: break-all;
-    font-size: 0.75rem; color: #ff8fa8; max-height: 100px; overflow-y: auto;
-    margin-bottom: 1rem; text-align: left; font-family: monospace;
-  }
-  .share-btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
-  .share-btn-row button {
-    padding: 0.7rem 1.4rem; border-radius: 10px; border: none;
-    font-family: 'Cormorant Garamond', serif; font-size: 0.95rem;
-    cursor: pointer; transition: all 0.3s; letter-spacing: 0.03em;
-  }
-  .btn-copy { background: linear-gradient(135deg, #ff4f7b, #d4365c); color: #fff; }
-  .btn-copy:hover { box-shadow: 0 6px 20px rgba(255,79,123,0.4); }
-  .btn-preview { background: rgba(255,255,255,0.08); color: #ffd4de; border: 1px solid rgba(255,79,123,0.2) !important; }
-  .btn-close-share { background: rgba(255,255,255,0.05); color: rgba(255,200,210,0.5); }
-  .copied-toast {
-    color: #5eff9e; font-size: 0.82rem; margin-top: 0.6rem; opacity: 0; transition: opacity 0.3s;
-  }
-  .copied-toast.show { opacity: 1; }
-
-  /* ═══════════════════════════════════════ */
-  /*  SCENE OVERLAYS                         */
-  /* ═══════════════════════════════════════ */
-  #title-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 100; pointer-events: none; opacity: 1; transition: opacity 1.8s ease;
-  }
-  #title-overlay.hidden { opacity: 0; }
-  #title-overlay h1 {
-    font-family: 'Great Vibes', cursive;
-    font-size: clamp(2.5rem, 8vw, 6rem);
-    color: #ff4f7b;
-    text-shadow: 0 0 40px rgba(255,79,123,0.5), 0 0 80px rgba(255,79,123,0.2);
-    letter-spacing: 0.02em; animation: titlePulse 3s ease-in-out infinite;
-    text-align: center; padding: 0 1rem;
-  }
-  #title-overlay p {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(0.9rem, 2.5vw, 1.3rem);
-    color: rgba(255,200,210,0.7); margin-top: 1rem; font-style: italic;
-    letter-spacing: 0.15em; animation: fadeInUp 2s ease 0.5s both;
-  }
-  @keyframes titlePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-  #quote-card {
-    position: fixed; bottom: 10%; left: 50%;
-    transform: translateX(-50%) translateY(30px);
-    background: linear-gradient(135deg, rgba(30,5,20,0.92), rgba(50,10,30,0.88));
-    border: 1px solid rgba(255,79,123,0.25); border-radius: 16px;
-    padding: 1.5rem 2.2rem; max-width: min(88vw, 500px); text-align: center;
-    z-index: 50; opacity: 0; pointer-events: none;
-    transition: opacity 0.8s ease, transform 0.8s ease;
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 12px 50px rgba(255,50,100,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-  #quote-card.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-  #quote-card .quote-text {
-    font-family: 'Playfair Display', serif; font-style: italic;
-    font-size: clamp(0.95rem, 2.2vw, 1.2rem); color: #ffd4de; line-height: 1.7;
-  }
-  #quote-card .quote-attr {
-    margin-top: 0.7rem; font-size: 0.8rem;
-    color: rgba(255,130,160,0.6); letter-spacing: 0.1em; text-transform: uppercase;
-  }
-
-  #photo-overlay {
-    position: fixed; top: 8%; right: 5%;
-    width: min(35vw, 260px); aspect-ratio: 3/4;
-    border-radius: 14px; overflow: hidden; z-index: 50;
-    opacity: 0; transform: rotate(3deg) scale(0.9);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-    pointer-events: none;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(255,79,123,0.2);
-    border: 2px solid rgba(255,79,123,0.3);
-  }
-  #photo-overlay.visible { opacity: 1; transform: rotate(3deg) scale(1); }
-  #photo-overlay img { width: 100%; height: 100%; object-fit: cover; }
-
-  #zoom-hint {
-    position: fixed; bottom: 3%; left: 50%; transform: translateX(-50%);
-    font-size: clamp(0.7rem, 1.8vw, 0.85rem); color: rgba(255,200,210,0.35);
-    letter-spacing: 0.2em; text-transform: uppercase; z-index: 40;
-    animation: hintPulse 2.5s ease-in-out infinite; transition: opacity 1s ease;
-  }
-  #zoom-hint.hidden { opacity: 0; }
-  @keyframes hintPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.7; } }
-
-  /* Share button in scene */
-  #share-trigger {
-    position: fixed; top: 1.2rem; right: 1.2rem; z-index: 60;
-    background: rgba(255,79,123,0.15); border: 1px solid rgba(255,79,123,0.3);
-    border-radius: 10px; padding: 0.5rem 1rem; color: #ff8fa8;
-    font-family: 'Cormorant Garamond', serif; font-size: 0.85rem;
-    cursor: pointer; transition: all 0.3s; letter-spacing: 0.08em;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    display: none;
-  }
-  #share-trigger.visible { display: block; }
-  #share-trigger:hover { background: rgba(255,79,123,0.25); }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,79,123,0.2); border-radius: 3px; }
+#share-trigger{position:fixed;top:1.2rem;right:1.2rem;z-index:60;background:rgba(255,79,123,.15);border:1px solid rgba(255,79,123,.3);border-radius:10px;padding:.5rem 1rem;color:#ff8fa8;font-family:'Cormorant Garamond',serif;font-size:.85rem;cursor:pointer;transition:all .3s;letter-spacing:.08em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none}
+#share-trigger.visible{display:block}
+#share-trigger:hover{background:rgba(255,79,123,.25)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,79,123,.2);border-radius:3px}
 </style>
 </head>
 <body class="config-mode">
 
-<!-- ═══════ CONFIG PANEL ═══════ -->
 <div id="config-panel">
   <div class="config-box">
     <h2>Our Love Story</h2>
     <p class="subtitle">Create a shareable 3D Valentine's heart</p>
-
-    <div class="field-group">
-      <label>Person 1 Name</label>
-      <input type="text" id="name1" placeholder="e.g. Jake">
-    </div>
-    <div class="field-group">
-      <label>Person 2 Name</label>
-      <input type="text" id="name2" placeholder="e.g. Emily">
-    </div>
-
+    <div class="field-group"><label>Person 1 Name</label><input type="text" id="name1" placeholder="e.g. Jake"></div>
+    <div class="field-group"><label>Person 2 Name</label><input type="text" id="name2" placeholder="e.g. Emily"></div>
     <div class="field-group">
       <label>Love Quotes (one per line)</label>
-      <textarea id="quotes" placeholder="You are my today and all of my tomorrows.&#10;Every love story is beautiful, but ours is my favorite.">You are my today and all of my tomorrows.
+      <textarea id="quotes">You are my today and all of my tomorrows.
 Every love story is beautiful, but ours is my favorite.
 In all the world, there is no heart for me like yours.
 I loved you yesterday, I love you still. I always have, I always will.
 You're the closest to heaven that I'll ever be.</textarea>
       <div class="hint">Each line becomes a quote shown when zooming in</div>
     </div>
-
     <div class="field-group">
-      <label>Photos (optional — shown when zooming in)</label>
+      <label>Photos (float inside the heart — tap to enlarge)</label>
       <div class="file-upload">
-        <label class="upload-btn">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-          Add Photos
-          <input type="file" id="photo-input" accept="image/*" multiple hidden>
-        </label>
+        <label class="upload-btn"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add Photos<input type="file" id="photo-input" accept="image/*" multiple hidden></label>
         <div id="thumb-container"></div>
       </div>
-      <div class="hint">Images are resized & compressed into the shareable link. Best: 2-5 small photos.</div>
-      <div class="size-warning" id="size-warning">
-        ⚠ Large images detected. They'll be compressed, but for best results use smaller photos (under 500KB each). Very large links may not work in all browsers.
-      </div>
+      <div class="hint">Best: 3-8 photos. They get compressed for sharing.</div>
+      <div class="size-warning" id="size-warning">⚠ Large images detected. They'll be compressed automatically.</div>
     </div>
-
-    <button class="launch-btn" id="launch-btn" onclick="generateLink()">
-      Generate Shareable Heart ♥
-    </button>
+    <button class="launch-btn" id="launch-btn" onclick="generateLink()">Generate Shareable Heart ♥</button>
   </div>
 </div>
 
-<!-- ═══════ SHARE MODAL ═══════ -->
 <div id="share-modal" class="hidden">
   <div class="share-box">
     <h3>Your Heart is Ready!</h3>
@@ -321,503 +127,337 @@ You're the closest to heaven that I'll ever be.</textarea>
   </div>
 </div>
 
-<!-- ═══════ SCENE OVERLAYS ═══════ -->
-<div id="title-overlay" class="hidden">
-  <h1 id="title-names"></h1>
-  <p>scroll or pinch to explore our heart</p>
+<div id="lightbox">
+  <div class="lb-close" onclick="closeLightbox()">×</div>
+  <div class="lb-nav lb-prev" onclick="event.stopPropagation();navLB(-1)">‹</div>
+  <img id="lb-img" src="" alt="Photo">
+  <div class="lb-nav lb-next" onclick="event.stopPropagation();navLB(1)">›</div>
+  <div class="lb-counter" id="lb-counter"></div>
 </div>
-<div id="quote-card">
-  <div class="quote-text" id="quote-text"></div>
-  <div class="quote-attr" id="quote-attr"></div>
-</div>
-<div id="photo-overlay"><img id="photo-img" src="" alt="memory"></div>
+
+<div id="title-overlay" class="hidden"><h1 id="title-names"></h1><p>scroll or pinch to explore our heart</p></div>
+<div id="quote-card"><div class="quote-text" id="quote-text"></div><div class="quote-attr" id="quote-attr"></div></div>
 <div id="zoom-hint" class="hidden">Scroll to zoom closer</div>
 <button id="share-trigger" onclick="showShareModal()">♥ Share Link</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ═══════════════════════════════════════════
-// COMPRESSION (LZString-like minimal impl)
-// Using btoa/atob + URI encoding for portability
-// ═══════════════════════════════════════════
+/* ════════════ URL ENCODE/DECODE ════════════ */
+function enc(obj){var j=JSON.stringify(obj);var b=btoa(unescape(encodeURIComponent(j)));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function dec(s){var b=s.replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';return JSON.parse(decodeURIComponent(escape(atob(b))))}
 
-function compressToURL(obj) {
-  const json = JSON.stringify(obj);
-  // Convert to base64, then make URL-safe
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
+/* ════════════ IMAGE COMPRESS ════════════ */
+function compImg(file,mW,mH,q){return new Promise(function(res){var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement('canvas');var w=img.width,h=img.height;if(w>mW){h=h*mW/w;w=mW}if(h>mH){w=w*mH/h;h=mH}c.width=Math.round(w);c.height=Math.round(h);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};img.src=e.target.result};r.readAsDataURL(file)})}
+function recomp(du,mW,mH,q){return new Promise(function(res){var img=new Image();img.onload=function(){var c=document.createElement('canvas');var w=img.width,h=img.height;if(w>mW){h=h*mW/w;w=mW}if(h>mH){w=w*mH/h;h=mH}c.width=Math.round(w);c.height=Math.round(h);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};img.src=du})}
 
-function decompressFromURL(str) {
-  // Restore base64
-  let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (b64.length % 4) b64 += '=';
-  const json = decodeURIComponent(escape(atob(b64)));
-  return JSON.parse(json);
-}
+/* ════════════ STATE ════════════ */
+var CFG={name1:'',name2:'',quotes:[],photos:[]};
+var genURL='';
+var scene,camera,renderer,heartGroup;
+var tRot={x:0,y:0},cRot={x:0,y:0};
+var dragging=false,dStart={x:0,y:0},dRotS={x:0,y:0};
+var zoom=1,tZoom=1;
+var qIdx=-1,lastZT=0;
+var floatParts=[],photoSprites=[];
+var T=0,lbIdx=0;
+var ray,mVec;
+var ckStart={x:0,y:0,t:0};
 
-// ═══════════════════════════════════════════
-// IMAGE COMPRESSION
-// ═══════════════════════════════════════════
-function compressImage(file, maxW, maxH, quality) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        if (w > maxW) { h = h * maxW / w; w = maxW; }
-        if (h > maxH) { w = w * maxH / h; h = maxH; }
-        canvas.width = Math.round(w);
-        canvas.height = Math.round(h);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
-let CONFIG = { name1: '', name2: '', quotes: [], photos: [] };
-let generatedURL = '';
-let scene, camera, renderer, heartGroup, particleSystem;
-let targetRotation = { x: 0, y: 0 };
-let currentRotation = { x: 0, y: 0 };
-let isDragging = false;
-let dragStart = { x: 0, y: 0 };
-let dragRotStart = { x: 0, y: 0 };
-let zoomLevel = 1, targetZoom = 1;
-let currentQuoteIdx = -1, currentPhotoIdx = -1;
-let lastZoomTrigger = 0;
-let floatingParticles = [];
-let time = 0;
-
-// ═══════════════════════════════════════════
-// PHOTO UPLOAD PREVIEW
-// ═══════════════════════════════════════════
-let uploadedFiles = [];
-
-document.getElementById('photo-input').addEventListener('change', function(e) {
-  for (const file of e.target.files) {
-    uploadedFiles.push(file);
-    addThumb(URL.createObjectURL(file), uploadedFiles.length - 1);
-  }
-  checkSize();
-  this.value = '';
+/* ════════════ UPLOADS ════════════ */
+var upFiles=[];
+document.getElementById('photo-input').addEventListener('change',function(e){
+  for(var i=0;i<e.target.files.length;i++){upFiles.push(e.target.files[i]);addThumb(URL.createObjectURL(e.target.files[i]),upFiles.length-1)}
+  ckSz();this.value='';
 });
-
-function addThumb(src, idx) {
-  const container = document.getElementById('thumb-container');
-  const wrap = document.createElement('div');
-  wrap.className = 'thumb-wrap';
-  wrap.dataset.idx = idx;
-  const img = document.createElement('img');
-  img.src = src; img.className = 'thumb-preview';
-  const btn = document.createElement('button');
-  btn.className = 'thumb-remove'; btn.textContent = '×';
-  btn.onclick = () => { uploadedFiles[idx] = null; wrap.remove(); checkSize(); };
-  wrap.appendChild(img); wrap.appendChild(btn);
-  container.appendChild(wrap);
+function addThumb(src,idx){
+  var c=document.getElementById('thumb-container');
+  var w=document.createElement('div');w.className='thumb-wrap';
+  var im=document.createElement('img');im.src=src;im.className='thumb-preview';
+  var b=document.createElement('button');b.className='thumb-remove';b.textContent='×';
+  b.onclick=function(){upFiles[idx]=null;w.remove();ckSz()};
+  w.appendChild(im);w.appendChild(b);c.appendChild(w);
+}
+function ckSz(){
+  var t=0;for(var i=0;i<upFiles.length;i++)if(upFiles[i])t+=upFiles[i].size;
+  document.getElementById('size-warning').classList.toggle('visible',t>2*1024*1024);
 }
 
-function checkSize() {
-  const total = uploadedFiles.filter(Boolean).reduce((s, f) => s + (f ? f.size : 0), 0);
-  document.getElementById('size-warning').classList.toggle('visible', total > 2 * 1024 * 1024);
+/* ════════════ LIGHTBOX ════════════ */
+function openLB(idx){
+  if(!CFG.photos.length)return;
+  lbIdx=idx;
+  document.getElementById('lb-img').src=CFG.photos[lbIdx];
+  document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
+  document.getElementById('lightbox').classList.add('open');
 }
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open')}
+function navLB(d){
+  lbIdx=(lbIdx+d+CFG.photos.length)%CFG.photos.length;
+  document.getElementById('lb-img').src=CFG.photos[lbIdx];
+  document.getElementById('lb-counter').textContent=(lbIdx+1)+' / '+CFG.photos.length;
+}
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLightbox()});
 
-// ═══════════════════════════════════════════
-// GENERATE SHAREABLE LINK
-// ═══════════════════════════════════════════
-async function generateLink() {
-  const btn = document.getElementById('launch-btn');
-  btn.disabled = true;
-  btn.textContent = 'Compressing images...';
-
-  CONFIG.name1 = document.getElementById('name1').value.trim() || 'You';
-  CONFIG.name2 = document.getElementById('name2').value.trim() || 'Me';
-  CONFIG.quotes = document.getElementById('quotes').value.split('\n').filter(q => q.trim());
-  if (CONFIG.quotes.length === 0) CONFIG.quotes = ['Happy Valentine\'s Day ♥'];
-
-  // Compress photos
-  const validFiles = uploadedFiles.filter(Boolean);
-  CONFIG.photos = [];
-  for (const file of validFiles) {
-    const compressed = await compressImage(file, 320, 420, 0.5);
-    CONFIG.photos.push(compressed);
-  }
-
-  // Build URL data
-  const payload = {
-    n1: CONFIG.name1,
-    n2: CONFIG.name2,
-    q: CONFIG.quotes,
-    p: CONFIG.photos
-  };
-
-  try {
-    const encoded = compressToURL(payload);
-    generatedURL = window.location.origin + window.location.pathname + '#v=' + encoded;
-
-    // Check URL length
-    if (generatedURL.length > 100000) {
-      // Try more aggressive compression
-      for (let i = 0; i < payload.p.length; i++) {
-        const file = validFiles[i];
-        if (file) payload.p[i] = await compressImage(file, 200, 260, 0.3);
-      }
-      const encoded2 = compressToURL(payload);
-      generatedURL = window.location.origin + window.location.pathname + '#v=' + encoded2;
-    }
-
-    document.getElementById('share-url').textContent = generatedURL;
+/* ════════════ GENERATE LINK ════════════ */
+async function generateLink(){
+  var btn=document.getElementById('launch-btn');
+  btn.disabled=true;btn.textContent='Compressing images...';
+  CFG.name1=document.getElementById('name1').value.trim()||'You';
+  CFG.name2=document.getElementById('name2').value.trim()||'Me';
+  CFG.quotes=document.getElementById('quotes').value.split('\n').filter(function(q){return q.trim()});
+  if(!CFG.quotes.length)CFG.quotes=['Happy Valentine\'s Day ♥'];
+  var vf=upFiles.filter(Boolean);CFG.photos=[];
+  for(var i=0;i<vf.length;i++)CFG.photos.push(await compImg(vf[i],400,520,.55));
+  var pay={n1:CFG.name1,n2:CFG.name2,q:CFG.quotes,p:CFG.photos};
+  try{
+    var e=enc(pay);var url=location.origin+location.pathname+'#v='+e;
+    if(url.length>120000){for(var i=0;i<pay.p.length;i++)pay.p[i]=await recomp(pay.p[i],240,300,.3);CFG.photos=pay.p;e=enc(pay);url=location.origin+location.pathname+'#v='+e}
+    genURL=url;
+    document.getElementById('share-url').textContent=genURL;
     document.getElementById('share-modal').classList.remove('hidden');
-  } catch(e) {
-    alert('Error generating link. Try fewer or smaller photos.');
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Generate Shareable Heart ♥';
+  }catch(er){alert('Error. Try fewer or smaller photos.')}
+  btn.disabled=false;btn.textContent='Generate Shareable Heart ♥';
 }
-
-function copyLink() {
-  navigator.clipboard.writeText(generatedURL).then(() => {
-    const toast = document.getElementById('copied-toast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-  }).catch(() => {
-    // Fallback
-    const ta = document.createElement('textarea');
-    ta.value = generatedURL;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    const toast = document.getElementById('copied-toast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
+function copyLink(){
+  navigator.clipboard.writeText(genURL).then(function(){
+    var t=document.getElementById('copied-toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000);
+  }).catch(function(){
+    var ta=document.createElement('textarea');ta.value=genURL;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    var t=document.getElementById('copied-toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2000);
   });
 }
+function showShareModal(){document.getElementById('share-url').textContent=genURL;document.getElementById('share-modal').classList.remove('hidden')}
+function previewHeart(){document.getElementById('share-modal').classList.add('hidden');launchScene()}
 
-function showShareModal() {
-  document.getElementById('share-url').textContent = generatedURL;
-  document.getElementById('share-modal').classList.remove('hidden');
-}
-
-function previewHeart() {
-  document.getElementById('share-modal').classList.add('hidden');
-  launchScene();
-}
-
-// ═══════════════════════════════════════════
-// CHECK URL ON LOAD — if data present, skip config
-// ═══════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  const hash = window.location.hash;
-  if (hash.startsWith('#v=')) {
-    try {
-      const data = decompressFromURL(hash.slice(3));
-      CONFIG.name1 = data.n1 || 'You';
-      CONFIG.name2 = data.n2 || 'Me';
-      CONFIG.quotes = data.q && data.q.length ? data.q : ['Happy Valentine\'s Day ♥'];
-      CONFIG.photos = data.p || [];
-      // Reconstruct URL for sharing
-      generatedURL = window.location.href;
+/* ════════════ AUTO-LOAD FROM URL ════════════ */
+window.addEventListener('DOMContentLoaded',function(){
+  var h=location.hash;
+  if(h.indexOf('#v=')===0){
+    try{
+      var d=dec(h.slice(3));
+      CFG.name1=d.n1||'You';CFG.name2=d.n2||'Me';
+      CFG.quotes=d.q&&d.q.length?d.q:['Happy Valentine\'s Day ♥'];
+      CFG.photos=d.p||[];genURL=location.href;
       document.getElementById('config-panel').classList.add('hidden');
       launchScene();
-    } catch(e) {
-      console.warn('Invalid link data, showing config:', e);
-    }
+    }catch(e){console.warn('Bad link:',e)}
   }
 });
 
-// ═══════════════════════════════════════════
-// LAUNCH 3D SCENE
-// ═══════════════════════════════════════════
-function launchScene() {
+/* ════════════ LAUNCH SCENE ════════════ */
+function launchScene(){
   document.getElementById('config-panel').classList.add('hidden');
   document.body.classList.remove('config-mode');
-
-  document.getElementById('title-names').textContent = CONFIG.name1 + ' & ' + CONFIG.name2;
-  document.getElementById('quote-attr').textContent = '— ' + CONFIG.name1 + ' & ' + CONFIG.name2;
+  document.getElementById('title-names').textContent=CFG.name1+' & '+CFG.name2;
+  document.getElementById('quote-attr').textContent='— '+CFG.name1+' & '+CFG.name2;
   document.getElementById('title-overlay').classList.remove('hidden');
   document.getElementById('zoom-hint').classList.remove('hidden');
   document.getElementById('share-trigger').classList.add('visible');
-
-  // Update page title
-  document.title = CONFIG.name1 + ' & ' + CONFIG.name2 + ' — Happy Valentine\'s Day ♥';
-
-  setTimeout(() => {
-    document.getElementById('title-overlay').classList.add('hidden');
-  }, 4500);
-
-  initThree();
-  animate();
+  document.title=CFG.name1+' & '+CFG.name2+' — Happy Valentine\'s Day ♥';
+  setTimeout(function(){document.getElementById('title-overlay').classList.add('hidden')},4500);
+  initThree();animate();
 }
 
-// ═══════════════════════════════════════════
-// HEART PARAMETRIC SHAPE
-// ═══════════════════════════════════════════
-function heartPosition(u, v) {
-  const t = u;
-  const scale = 0.07;
-  const x = 16 * Math.pow(Math.sin(t), 3);
-  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-  const r = 0.6 + 0.4 * Math.sin(v);
-  const phi = v;
-  return {
-    x: (x * r) * scale,
-    y: (y * r) * scale + 0.3,
-    z: (Math.sin(phi) * 5 * Math.sin(t)) * scale
-  };
+/* ════════════ HEART MATH ════════════ */
+function heartPos(u,v){
+  var s=.07,x=16*Math.pow(Math.sin(u),3);
+  var y=13*Math.cos(u)-5*Math.cos(2*u)-2*Math.cos(3*u)-Math.cos(4*u);
+  var r=.6+.4*Math.sin(v);
+  return{x:x*r*s,y:y*r*s+.3,z:Math.sin(v)*5*Math.sin(u)*s};
+}
+function getHP(n){
+  var pts=[];for(var i=0;i<n;i++){
+    var u=Math.random()*Math.PI*2,v=Math.random()*Math.PI,p=heartPos(u,v);
+    p.x+=(Math.random()-.5)*.04;p.y+=(Math.random()-.5)*.04;p.z+=(Math.random()-.5)*.12;
+    pts.push(p);
+  }return pts;
+}
+function mkNameTex(name,color){
+  var c=document.createElement('canvas');c.width=128;c.height=32;
+  var ctx=c.getContext('2d');ctx.font='bold 20px "Playfair Display",serif';
+  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,64,16);
+  var t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
-function getHeartPoints(count) {
-  const points = [];
-  for (let i = 0; i < count; i++) {
-    const u = Math.random() * Math.PI * 2;
-    const v = Math.random() * Math.PI;
-    const p = heartPosition(u, v);
-    const jitter = 0.04;
-    p.x += (Math.random() - 0.5) * jitter;
-    p.y += (Math.random() - 0.5) * jitter;
-    p.z += (Math.random() - 0.5) * jitter * 3;
-    points.push(p);
-  }
-  return points;
+/* ════════════ ROUNDED RECT HELPER ════════════ */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
 
-// ═══════════════════════════════════════════
-// NAME TEXTURE
-// ═══════════════════════════════════════════
-function createNameTexture(name, color) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 32;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 128, 32);
-  ctx.font = 'bold 20px "Playfair Display", serif';
-  ctx.fillStyle = color;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(name, 64, 16);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// ═══════════════════════════════════════════
-// THREE.JS INIT
-// ═══════════════════════════════════════════
-function initThree() {
-  scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0a0008, 0.15);
-
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 0.3, 4.5);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x0a0008, 1);
+/* ════════════ THREE.JS INIT ════════════ */
+function initThree(){
+  scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x0a0008,.15);
+  camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);
+  camera.position.set(0,.3,4.5);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0x0a0008,1);
   document.body.appendChild(renderer.domElement);
 
-  heartGroup = new THREE.Group();
-  scene.add(heartGroup);
+  ray=new THREE.Raycaster();mVec=new THREE.Vector2();
+  heartGroup=new THREE.Group();scene.add(heartGroup);
 
-  // ── Name sprites ──
-  const totalPoints = 800;
-  const points = getHeartPoints(totalPoints);
-  const names = [CONFIG.name1, CONFIG.name2];
-  const colors = ['#ff4f7b', '#ff8fa8'];
-
-  points.forEach((p, i) => {
-    const nameIdx = i % 2;
-    const tex = createNameTexture(names[nameIdx], colors[nameIdx]);
-    const mat = new THREE.SpriteMaterial({
-      map: tex, transparent: true,
-      opacity: 0.6 + Math.random() * 0.4,
-      depthWrite: false, blending: THREE.AdditiveBlending,
-    });
-    const sprite = new THREE.Sprite(mat);
-    sprite.position.set(p.x, p.y, p.z);
-    const s = 0.18 + Math.random() * 0.12;
-    sprite.scale.set(s, s * 0.25, 1);
-    sprite.userData = { baseOpacity: mat.opacity, phase: Math.random() * Math.PI * 2 };
-    heartGroup.add(sprite);
-  });
-
-  // ── Core glow particles ──
-  const coreGeo = new THREE.BufferGeometry();
-  const coreCount = 400;
-  const corePos = new Float32Array(coreCount * 3);
-  const corePoints2 = getHeartPoints(coreCount);
-  corePoints2.forEach((p, i) => {
-    corePos[i*3] = p.x; corePos[i*3+1] = p.y; corePos[i*3+2] = p.z;
-  });
-  coreGeo.setAttribute('position', new THREE.BufferAttribute(corePos, 3));
-  const coreMat = new THREE.PointsMaterial({
-    color: 0xff2255, size: 0.025, transparent: true, opacity: 0.35,
-    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
-  });
-  particleSystem = new THREE.Points(coreGeo, coreMat);
-  heartGroup.add(particleSystem);
-
-  // ── Ambient particles ──
-  const floatGeo = new THREE.BufferGeometry();
-  const floatCount = 200;
-  const floatPos = new Float32Array(floatCount * 3);
-  for (let i = 0; i < floatCount; i++) {
-    floatPos[i*3] = (Math.random()-0.5)*8;
-    floatPos[i*3+1] = (Math.random()-0.5)*6;
-    floatPos[i*3+2] = (Math.random()-0.5)*5;
+  // Name sprites
+  var np=getHP(700),names=[CFG.name1,CFG.name2],cols=['#ff4f7b','#ff8fa8'];
+  for(var i=0;i<np.length;i++){
+    var tx=mkNameTex(names[i%2],cols[i%2]);
+    var mt=new THREE.SpriteMaterial({map:tx,transparent:true,opacity:.55+Math.random()*.45,depthWrite:false,blending:THREE.AdditiveBlending});
+    var sp=new THREE.Sprite(mt);sp.position.set(np[i].x,np[i].y,np[i].z);
+    var sz=.18+Math.random()*.12;sp.scale.set(sz,sz*.25,1);
+    sp.userData={type:'name',bOp:mt.opacity,ph:Math.random()*Math.PI*2};
+    heartGroup.add(sp);
   }
-  floatGeo.setAttribute('position', new THREE.BufferAttribute(floatPos, 3));
-  const floatMat = new THREE.PointsMaterial({
-    color: 0xff6688, size: 0.012, transparent: true, opacity: 0.3,
-    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
-  });
-  const floatPoints = new THREE.Points(floatGeo, floatMat);
-  scene.add(floatPoints);
-  floatingParticles.push(floatPoints);
 
-  scene.add(new THREE.AmbientLight(0x331122, 0.5));
-  setupControls();
-  window.addEventListener('resize', onResize);
+  // Photo sprites inside heart — rounded corners + pink border + transparent bg
+  if(CFG.photos.length>0){
+    var rep=Math.max(Math.ceil(30/CFG.photos.length),3);
+    var pc=Math.min(CFG.photos.length*rep,50);
+    var pp=getHP(pc);
+    for(var i=0;i<pp.length;i++){
+      (function(idx,pt){
+        var img=new Image();
+        img.onload=function(){
+          // Draw photo onto canvas with rounded corners & border
+          var pad=6,rad=14;
+          var cw=img.width+pad*2,ch=img.height+pad*2;
+          var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+          var cx=cv.getContext('2d');
+          // Transparent background (default)
+          // Draw pink glow border
+          cx.fillStyle='rgba(255,79,123,0.35)';
+          roundRect(cx,0,0,cw,ch,rad+2);cx.fill();
+          // Clip rounded rect and draw image
+          cx.save();
+          roundRect(cx,pad,pad,img.width,img.height,rad);cx.clip();
+          cx.drawImage(img,pad,pad);
+          cx.restore();
+          // Soft inner glow
+          cx.strokeStyle='rgba(255,180,200,0.25)';cx.lineWidth=2;
+          roundRect(cx,pad,pad,img.width,img.height,rad);cx.stroke();
+
+          var tex=new THREE.CanvasTexture(cv);tex.needsUpdate=true;
+          var asp=cw/ch;
+          var mat=new THREE.SpriteMaterial({map:tex,transparent:true,opacity:.85,depthWrite:false});
+          var spr=new THREE.Sprite(mat);
+          spr.position.set(pt.x,pt.y,pt.z);
+          var sz=.14+Math.random()*.09;
+          spr.scale.set(sz*asp,sz,1);
+          spr.userData={type:'photo',pIdx:idx,bOp:.85,ph:Math.random()*Math.PI*2,bSz:sz,asp:asp};
+          heartGroup.add(spr);photoSprites.push(spr);
+        };
+        img.src=CFG.photos[idx];
+      })(i%CFG.photos.length,pp[i]);
+    }
+  }
+
+  // Glow particles
+  var cg=new THREE.BufferGeometry(),cn=350,cp=new Float32Array(cn*3);
+  var cpts=getHP(cn);for(var i=0;i<cn;i++){cp[i*3]=cpts[i].x;cp[i*3+1]=cpts[i].y;cp[i*3+2]=cpts[i].z}
+  cg.setAttribute('position',new THREE.BufferAttribute(cp,3));
+  heartGroup.add(new THREE.Points(cg,new THREE.PointsMaterial({color:0xff2255,size:.025,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true})));
+
+  // Ambient float
+  var fg=new THREE.BufferGeometry(),fn=200,fp=new Float32Array(fn*3);
+  for(var i=0;i<fn;i++){fp[i*3]=(Math.random()-.5)*8;fp[i*3+1]=(Math.random()-.5)*6;fp[i*3+2]=(Math.random()-.5)*5}
+  fg.setAttribute('position',new THREE.BufferAttribute(fp,3));
+  var fpt=new THREE.Points(fg,new THREE.PointsMaterial({color:0xff6688,size:.012,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+  scene.add(fpt);floatParts.push(fpt);
+
+  scene.add(new THREE.AmbientLight(0x331122,.5));
+  setupCtrl();
+  window.addEventListener('resize',onRsz);
 }
 
-// ═══════════════════════════════════════════
-// CONTROLS
-// ═══════════════════════════════════════════
-function setupControls() {
-  const el = renderer.domElement;
-
-  el.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    dragStart = { x: e.clientX, y: e.clientY };
-    dragRotStart = { x: targetRotation.x, y: targetRotation.y };
+/* ════════════ CONTROLS ════════════ */
+function setupCtrl(){
+  var el=renderer.domElement;
+  el.addEventListener('mousedown',function(e){dragging=true;dStart={x:e.clientX,y:e.clientY};dRotS={x:tRot.x,y:tRot.y};ckStart={x:e.clientX,y:e.clientY,t:Date.now()}});
+  window.addEventListener('mousemove',function(e){if(dragging){tRot.y=dRotS.y+(e.clientX-dStart.x)*.005;tRot.x=dRotS.x+(e.clientY-dStart.y)*.005;tRot.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,tRot.x))}});
+  window.addEventListener('mouseup',function(e){
+    dragging=false;
+    var dx=e.clientX-ckStart.x,dy=e.clientY-ckStart.y;
+    if(Math.sqrt(dx*dx+dy*dy)<5&&Date.now()-ckStart.t<300)checkClick(e.clientX,e.clientY);
   });
-  window.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      targetRotation.y = dragRotStart.y + (e.clientX - dragStart.x) * 0.005;
-      targetRotation.x = dragRotStart.x + (e.clientY - dragStart.y) * 0.005;
-      targetRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotation.x));
-    }
-  });
-  window.addEventListener('mouseup', () => isDragging = false);
+  el.addEventListener('wheel',function(e){e.preventDefault();tZoom-=e.deltaY*.001;tZoom=Math.max(.35,Math.min(2.5,tZoom))},{passive:false});
 
-  el.addEventListener('wheel', (e) => {
+  var lTD=0,tSP={x:0,y:0};
+  el.addEventListener('touchstart',function(e){
+    if(e.touches.length===1){dragging=true;dStart={x:e.touches[0].clientX,y:e.touches[0].clientY};dRotS={x:tRot.x,y:tRot.y};tSP={x:e.touches[0].clientX,y:e.touches[0].clientY};ckStart.t=Date.now()}
+    else if(e.touches.length===2){dragging=false;var dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;lTD=Math.sqrt(dx*dx+dy*dy)}
+  },{passive:false});
+  el.addEventListener('touchmove',function(e){
     e.preventDefault();
-    targetZoom -= e.deltaY * 0.001;
-    targetZoom = Math.max(0.35, Math.min(2.5, targetZoom));
-  }, { passive: false });
-
-  let lastTouchDist = 0;
-  el.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-      isDragging = true;
-      dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      dragRotStart = { x: targetRotation.x, y: targetRotation.y };
-    } else if (e.touches.length === 2) {
-      isDragging = false;
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastTouchDist = Math.sqrt(dx*dx + dy*dy);
-    }
-  }, { passive: false });
-
-  el.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (e.touches.length === 1 && isDragging) {
-      targetRotation.y = dragRotStart.y + (e.touches[0].clientX - dragStart.x) * 0.005;
-      targetRotation.x = dragRotStart.x + (e.touches[0].clientY - dragStart.y) * 0.005;
-      targetRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotation.x));
-    } else if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      targetZoom += (dist - lastTouchDist) * 0.006;
-      targetZoom = Math.max(0.35, Math.min(2.5, targetZoom));
-      lastTouchDist = dist;
-    }
-  }, { passive: false });
-
-  el.addEventListener('touchend', () => isDragging = false);
+    if(e.touches.length===1&&dragging){tRot.y=dRotS.y+(e.touches[0].clientX-dStart.x)*.005;tRot.x=dRotS.x+(e.touches[0].clientY-dStart.y)*.005;tRot.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,tRot.x))}
+    else if(e.touches.length===2){var dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY,d=Math.sqrt(dx*dx+dy*dy);tZoom+=(d-lTD)*.006;tZoom=Math.max(.35,Math.min(2.5,tZoom));lTD=d}
+  },{passive:false});
+  el.addEventListener('touchend',function(e){
+    dragging=false;
+    if(e.changedTouches.length===1){var t=e.changedTouches[0],dx=t.clientX-tSP.x,dy=t.clientY-tSP.y;
+    if(Math.sqrt(dx*dx+dy*dy)<12&&Date.now()-ckStart.t<400)checkClick(t.clientX,t.clientY)}
+  });
 }
 
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+function checkClick(cx,cy){
+  if(!photoSprites.length)return;
+  mVec.x=(cx/innerWidth)*2-1;mVec.y=-(cy/innerHeight)*2+1;
+  ray.setFromCamera(mVec,camera);
+  var hits=ray.intersectObjects(photoSprites,false);
+  if(hits.length>0)openLB(hits[0].object.userData.pIdx);
 }
 
-// ═══════════════════════════════════════════
-// ZOOM CONTENT
-// ═══════════════════════════════════════════
-function updateZoomContent() {
-  const now = Date.now();
-  if (zoomLevel > 1.2) document.getElementById('zoom-hint').classList.add('hidden');
+function onRsz(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 
-  if (zoomLevel > 1.3 && now - lastZoomTrigger > 2500) {
-    lastZoomTrigger = now;
-    currentQuoteIdx = (currentQuoteIdx + 1) % CONFIG.quotes.length;
-    document.getElementById('quote-text').textContent = '"' + CONFIG.quotes[currentQuoteIdx] + '"';
+/* ════════════ ZOOM CONTENT ════════════ */
+function updateZC(){
+  var now=Date.now();
+  if(zoom>1.2)document.getElementById('zoom-hint').classList.add('hidden');
+  if(zoom>1.3&&now-lastZT>3000){
+    lastZT=now;qIdx=(qIdx+1)%CFG.quotes.length;
+    document.getElementById('quote-text').textContent='\u201C'+CFG.quotes[qIdx]+'\u201D';
     document.getElementById('quote-card').classList.add('visible');
-
-    if (CONFIG.photos.length > 0) {
-      currentPhotoIdx = (currentPhotoIdx + 1) % CONFIG.photos.length;
-      document.getElementById('photo-img').src = CONFIG.photos[currentPhotoIdx];
-      document.getElementById('photo-overlay').classList.add('visible');
-    }
   }
-
-  if (zoomLevel < 1.15) {
-    document.getElementById('quote-card').classList.remove('visible');
-    document.getElementById('photo-overlay').classList.remove('visible');
-  }
+  if(zoom<1.15)document.getElementById('quote-card').classList.remove('visible');
 }
 
-// ═══════════════════════════════════════════
-// ANIMATION LOOP
-// ═══════════════════════════════════════════
-function animate() {
-  requestAnimationFrame(animate);
-  time += 0.016;
+/* ════════════ ANIMATE ════════════ */
+function animate(){
+  requestAnimationFrame(animate);T+=.016;
+  cRot.x+=(tRot.x-cRot.x)*.06;cRot.y+=(tRot.y-cRot.y)*.06;
+  zoom+=(tZoom-zoom)*.06;
+  if(!dragging)tRot.y+=.002;
+  heartGroup.rotation.x=cRot.x;heartGroup.rotation.y=cRot.y;
+  camera.position.z=4.5/zoom;camera.lookAt(0,.3,0);
 
-  currentRotation.x += (targetRotation.x - currentRotation.x) * 0.06;
-  currentRotation.y += (targetRotation.y - currentRotation.y) * 0.06;
-  zoomLevel += (targetZoom - zoomLevel) * 0.06;
+  var pulse=1+.02*Math.sin(T*2.5);
+  heartGroup.scale.set(pulse,pulse,pulse);
 
-  if (!isDragging) targetRotation.y += 0.002;
-
-  heartGroup.rotation.x = currentRotation.x;
-  heartGroup.rotation.y = currentRotation.y;
-  camera.position.z = 4.5 / zoomLevel;
-  camera.lookAt(0, 0.3, 0);
-
-  const pulse = 1 + 0.02 * Math.sin(time * 2.5);
-  heartGroup.scale.set(pulse, pulse, pulse);
-
-  heartGroup.children.forEach(child => {
-    if (child.isSprite && child.userData.baseOpacity !== undefined) {
-      child.material.opacity = child.userData.baseOpacity + 0.15 * Math.sin(time * 1.5 + child.userData.phase);
+  // Shimmer & bob
+  for(var i=0;i<heartGroup.children.length;i++){
+    var ch=heartGroup.children[i];
+    if(!ch.isSprite||!ch.userData.type)continue;
+    if(ch.userData.type==='name'){
+      ch.material.opacity=ch.userData.bOp+.15*Math.sin(T*1.5+ch.userData.ph);
+    }else if(ch.userData.type==='photo'){
+      ch.material.opacity=ch.userData.bOp+.1*Math.sin(T*.8+ch.userData.ph);
+      var s=ch.userData.bSz,sp=1+.03*Math.sin(T*1.2+ch.userData.ph);
+      ch.scale.set(s*ch.userData.asp*sp,s*sp,1);
     }
-  });
+  }
 
-  floatingParticles.forEach(fp => {
-    const pos = fp.geometry.attributes.position.array;
-    for (let i = 0; i < pos.length; i += 3) {
-      pos[i+1] += Math.sin(time + pos[i] * 2) * 0.0003;
-    }
-    fp.geometry.attributes.position.needsUpdate = true;
-  });
+  // Float ambient
+  for(var j=0;j<floatParts.length;j++){
+    var pos=floatParts[j].geometry.attributes.position.array;
+    for(var i=0;i<pos.length;i+=3)pos[i+1]+=Math.sin(T+pos[i]*2)*.0003;
+    floatParts[j].geometry.attributes.position.needsUpdate=true;
+  }
 
-  updateZoomContent();
-  renderer.render(scene, camera);
+  updateZC();renderer.render(scene,camera);
 }
 </script>
 </body>
